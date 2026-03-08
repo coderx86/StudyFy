@@ -7,14 +7,20 @@ export const collections = {
   COURSES: "courses",
 };
 
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+let client;
 
 export const dbConnect = (cname) => {
+  if (!client) {
+    if (!uri) {
+      throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+    }
+    client = new MongoClient(uri, {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
+    });
+  }
   return client.db(dbname).collection(cname);
 };
