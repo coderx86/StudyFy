@@ -3,18 +3,18 @@ const uri = process.env.MONGODB_URI;
 const dbname = process.env.DB_NAME;
 
 export const collections = {
-    USER: "users",
-    COURSES: "courses",
+  USER: "users",
+  COURSES: "courses",
 };
 
 const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    },
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
 });
 
 export const dbConnect = (cname) => {
-    return client.db(dbname).collection(cname);
+  return client.db(dbname).collection(cname);
 };

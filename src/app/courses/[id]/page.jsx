@@ -1,45 +1,31 @@
-"use client";
-
-import { use, useState, useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { FaBookOpen, FaClock, FaDollarSign, FaChalkboardTeacher, FaLayerGroup, FaArrowLeft, FaPlayCircle } from "react-icons/fa";
+import Link from "next/link";
+import { FaArrowLeft, FaClock, FaDollarSign, FaChalkboardTeacher, FaBookOpen } from "react-icons/fa";
+import { dbConnect } from "@/lib/dbConnect";
+import { ObjectId } from "mongodb";
 
-const CourseDetailPage = ({ params }) => {
-  const { id } = use(params);
-  const [course, setCourse] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        const res = await fetch(`/api/courses/${id}`);
-        const data = await res.json();
-        setCourse(data);
-      } catch (error) {
-        console.error("Failed to fetch course details:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCourse();
-  }, [id]);
-
-  if (loading) {
-    return (
-      <div className="text-center py-[100px]">
-        <div className="loading-spinner" />
-        <p className="text-text-muted mt-4">Loading course details...</p>
-      </div>
-    );
+async function getCourse(id) {
+  try {
+    if (!ObjectId.isValid(id)) return null;
+    const course = await dbConnect("courses").findOne({ _id: new ObjectId(id) });
+    return course ? JSON.parse(JSON.stringify(course)) : null;
+  } catch {
+    return null;
   }
+}
+
+export default async function CourseDetailPage({ params }) {
+  const { id } = await params;
+  const course = await getCourse(id);
 
   if (!course) {
     return (
-      <div className="text-center py-[100px]">
-        <h2 className="text-2xl font-bold text-text-primary mb-4">Course Not Found</h2>
-        <Link href="/courses" className="btn-primary">
-          Back to Courses
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <FaBookOpen size={64} color="var(--text-muted)" className="opacity-30" />
+        <h2 className="text-2xl text-text-primary">Course Not Found</h2>
+        <p className="text-text-muted">The course you are looking for does not exist.</p>
+        <Link href="/courses" className="btn-primary mt-2">
+          <FaArrowLeft size={14} /> Back to Courses
         </Link>
       </div>
     );
@@ -47,100 +33,90 @@ const CourseDetailPage = ({ params }) => {
 
   return (
     <div className="py-10 pb-20">
-      <div className="site-container">
+      <div className="site-container-md">
+        {/* Back */}
         <Link
           href="/courses"
-          className="inline-flex items-center gap-2 text-text-muted no-underline mb-8 hover:text-accent-primary transition-colors text-[0.9rem]"
+          className="inline-flex items-center gap-2 text-text-secondary no-underline text-[0.9rem] mb-6 transition-colors duration-200 hover:text-accent-primary"
         >
-          <FaArrowLeft size={12} /> Back to Courses
+          <FaArrowLeft size={14} /> Back to Courses
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
-          {/* Main Content */}
-          <div>
-            <div className="relative h-[300px] md:h-[450px] bg-bg-card rounded-3xl overflow-hidden mb-8 shadow-shadow-card">
-              {course.thumbnail ? (
-                <Image
-                  src={course.thumbnail}
-                  alt={course.title}
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <FaBookOpen size={80} color="var(--accent-primary)" className="opacity-20" />
+        {/* Banner */}
+        <div className="relative h-[360px] rounded-2xl overflow-hidden mb-8 bg-bg-card">
+          {course.thumbnail ? (
+            <Image
+              src={course.thumbnail}
+              alt={course.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 900px"
+              priority
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-[linear-gradient(135deg,rgba(108,99,255,0.15),rgba(0,212,170,0.1))]">
+              <FaBookOpen size={80} color="var(--accent-primary)" className="opacity-30" />
+            </div>
+          )}
+          {course.category && (
+            <div className="inline-flex items-center gap-1 px-4 py-1.5 text-[0.8rem] font-semibold rounded-full bg-[rgba(108,99,255,0.15)] text-accent-primary uppercase tracking-[0.5px] absolute top-5 left-5">
+              {course.category}
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="bg-bg-card border border-border-color rounded-2xl p-9">
+          <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-bold text-text-primary mb-5">
+            {course.title}
+          </h1>
+
+          {/* Meta info */}
+          <div className="flex flex-wrap gap-6 mb-7 p-5 bg-[rgba(108,99,255,0.05)] rounded-[var(--radius-md)] border border-[rgba(108,99,255,0.1)]">
+            <div className="flex items-center gap-2">
+              <FaDollarSign size={16} color="var(--accent-primary)" />
+              <div>
+                <p className="text-[0.75rem] text-text-muted uppercase tracking-[0.5px]">Price</p>
+                <p className="font-bold text-accent-primary text-[1.2rem]">${course.price}</p>
+              </div>
+            </div>
+
+            {course.duration && (
+              <div className="flex items-center gap-2">
+                <FaClock size={16} color="var(--accent-secondary)" />
+                <div>
+                  <p className="text-[0.75rem] text-text-muted uppercase tracking-[0.5px]">Duration</p>
+                  <p className="font-semibold text-text-primary">{course.duration}</p>
                 </div>
-              )}
-              <div className="absolute inset-0 bg-linear-to-t from-[rgba(0,0,0,0.6)] to-transparent flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-                <FaPlayCircle size={64} color="white" className="cursor-pointer" />
               </div>
-            </div>
+            )}
 
-            <h1 className="text-[2rem] md:text-[2.5rem] font-bold text-text-primary mb-4 leading-[1.2]">
-              {course.title}
-            </h1>
-
-            <div className="flex flex-wrap gap-6 mb-8 p-6 bg-bg-card rounded-2xl border border-border-color">
-              <div className="flex items-center gap-2 text-text-secondary text-[0.95rem]">
-                <FaLayerGroup color="var(--accent-primary)" size={16} />
-                <span className="font-medium">{course.category}</span>
+            {course.instructor && (
+              <div className="flex items-center gap-2">
+                <FaChalkboardTeacher size={16} color="var(--warning)" />
+                <div>
+                  <p className="text-[0.75rem] text-text-muted uppercase tracking-[0.5px]">Instructor</p>
+                  <p className="font-semibold text-text-primary">{course.instructor}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-text-secondary text-[0.95rem]">
-                <FaClock color="var(--accent-primary)" size={16} />
-                <span className="font-medium">{course.duration}</span>
-              </div>
-              <div className="flex items-center gap-2 text-text-secondary text-[0.95rem]">
-                <FaChalkboardTeacher color="var(--accent-primary)" size={16} />
-                <span className="font-medium">10+ Lessons</span>
-              </div>
-            </div>
-
-            <div className="mb-10">
-              <h3 className="text-[1.25rem] font-semibold text-text-primary mb-4 border-b border-border-color pb-2 inline-block">
-                Course Overview
-              </h3>
-              <p className="text-text-secondary text-[1.1rem] leading-[1.8] whitespace-pre-line">
-                {course.description || course.shortDescription}
-              </p>
-            </div>
+            )}
           </div>
 
-          {/* Sidebar / Enrollment */}
-          <div className="lg:sticky lg:top-[92px] h-fit">
-            <div className="bg-bg-card border border-border-color rounded-3xl p-8 shadow-shadow-card">
-              <div className="flex items-center gap-2 text-accent-primary mb-6">
-                <FaDollarSign size={24} />
-                <span className="text-[2.2rem] font-bold">{course.price}</span>
-              </div>
-
-              <div className="flex flex-col gap-4 mb-8">
-                <div className="flex items-center justify-between py-3 border-b border-border-color">
-                  <span className="text-text-muted text-[0.95rem]">Full Access</span>
-                  <span className="text-text-primary font-medium">Lifetime</span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b border-border-color">
-                  <span className="text-text-muted text-[0.95rem]">Certificate</span>
-                  <span className="text-text-primary font-medium">Included</span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-text-muted text-[0.95rem]">Updates</span>
-                  <span className="text-text-primary font-medium">Free</span>
-                </div>
-              </div>
-
-              <button className="btn-primary w-full py-4 text-[1.05rem] font-bold tracking-[0.5px]">
-                Enroll in Course
-              </button>
-              <p className="text-center text-text-muted text-[0.8rem] mt-4">
-                30-day money-back guarantee
-              </p>
-            </div>
+          {/* Description */}
+          <div className="mb-8">
+            <h2 className="text-[1.2rem] font-semibold text-text-primary mb-3">
+              About This Course
+            </h2>
+            <p className="text-text-secondary leading-[1.8] whitespace-pre-line">
+              {course.fullDescription || course.shortDescription}
+            </p>
           </div>
+
+          <Link href="/courses" className="btn-secondary">
+            <FaArrowLeft size={14} /> Back to Courses
+          </Link>
         </div>
       </div>
     </div>
   );
-};
-
-export default CourseDetailPage;
+}
