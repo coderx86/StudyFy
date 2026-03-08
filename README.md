@@ -90,4 +90,4 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 ## Live Demo
 
-[Deployed on Vercel](<your-vercel-url>)
+[Deployed on Vercel](https://studyfy-inky.vercel.app/)
